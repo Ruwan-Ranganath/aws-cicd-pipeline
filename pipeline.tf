@@ -1,7 +1,6 @@
-
 resource "aws_codebuild_project" "tf-plan" {
-  name          = "tf-cicd-plan"
-  description   = "terraform infra buiild"
+  name          = "tf-cicd-plan2"
+  description   = "Plan stage for terraform"
   service_role  = aws_iam_role.tf-codebuild-role.arn
 
   artifacts {
@@ -10,28 +9,23 @@ resource "aws_codebuild_project" "tf-plan" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "hashicorp/terraform:1.0.8"
+    image                       = "hashicorp/terraform:0.14.3"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "SERVICE_ROLE"
-    registry_credential {
-      credential = var.dockerhub_credentials
-      credential_provider = "SECRETS_MANAGER"
+    registry_credential{
+        credential = var.dockerhub_credentials
+        credential_provider = "SECRETS_MANAGER"
     }
-
-  }
-
-
-  source {
-    type            = "CODEPIPELINE"
-    buildspec       = file("buildspec/plan-buildspec.yml")
-  }
- 
+ }
+ source {
+     type   = "CODEPIPELINE"
+     buildspec = file("buildspec/plan-buildspec.yml")
+ }
 }
-
 
 resource "aws_codebuild_project" "tf-apply" {
   name          = "tf-cicd-apply"
-  description   = "terraform infra buiild"
+  description   = "Apply stage for terraform"
   service_role  = aws_iam_role.tf-codebuild-role.arn
 
   artifacts {
@@ -43,28 +37,27 @@ resource "aws_codebuild_project" "tf-apply" {
     image                       = "hashicorp/terraform:1.0.8"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "SERVICE_ROLE"
-    registry_credential {
-      credential = var.dockerhub_credentials
-      credential_provider = "SECRETS_MANAGER"
+    registry_credential{
+        credential = var.dockerhub_credentials
+        credential_provider = "SECRETS_MANAGER"
     }
-
-  }
-
-  source {
-    type            = "CODEPIPELINE"
-    buildspec       = file("buildspec/apply-buildspec.yml")
-  }
- 
+ }
+ source {
+     type   = "CODEPIPELINE"
+     buildspec = file("buildspec/apply-buildspec.yml")
+ }
 }
 
-resource "aws_codepipeline" "pipeline" {
-  name = "cicd-pipeline"
-  role_arn = aws_iam_role.codepipeline-role.arn
 
-  artifact_store {
-    type = "S3"
-    location = aws_s3_bucket.codepipeline_artifacts.id
-  }
+resource "aws_codepipeline" "cicd_pipeline" {
+
+    name = "tf-cicd"
+    role_arn = aws_iam_role.tf-codepipeline-role.arn
+
+    artifact_store {
+        type="S3"
+        location = aws_s3_bucket.codepipeline_artifacts.id
+    }
 
     stage {
         name = "Source"
@@ -76,9 +69,9 @@ resource "aws_codepipeline" "pipeline" {
             version = "1"
             output_artifacts = ["tf-code"]
             configuration = {
-                FullRepositoryId = "Ruwan-Ranganath/aws-cicd-pipeline"
+                FullRepositoryId = "davoclock/aws-cicd-pipeline"
                 BranchName   = "master"
-                ConnectionArn = var.codestar_credentials
+                ConnectionArn = var.codestar_connector_credentials
                 OutputArtifactFormat = "CODE_ZIP"
             }
         }
