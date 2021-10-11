@@ -1,5 +1,3 @@
-resource "aws_default_vpc" "demo" {
-  tags = {
-    Name = "Default VPC"
-  }
+resource "aws_vpc" "main" {
+  cidr_block = "1.2.0.0/16"
 }
